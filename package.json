@@ -1,0 +1,16 @@
+{
+  "name": "expresspractice",
+  "version": "1.0.0",
+  "description": "practice express.js",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch --env-file=.env index.js"
+  },
+  "author": "John Dick",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^5.1.0"
+  }
+}
