@@ -1,18 +1,18 @@
 import express from 'express';
 const PORT = process.env.PORT;
+import router from './routes/routes.js';
 
 
 // initialize express
 const app = express();
 
-// respond to a get request
-app.get('/', (req, res) => {
-  res.send('Hello World is this working !');
-});
-//respond to another get
-app.get('/about', (req, res) => {
-  res.send('About Page');
-});
+// Routes
+app.use('/',router);
+
+// Add a body parser
+app.use(express.json()); // For parsing application/json
+app.use(express.urlencoded({ extended: false })); // For parsing application/x-www-form-urlencoded
+
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
@@ -26,17 +26,6 @@ app.listen(PORT, () => {
 
 
 // lets create a simple app route
-
-let posts = [
-  { id: 1, title: 'Post 1', content: 'Content for post 1' },
-  { id: 2, title: 'Post 2', content: 'Content for post 2' },
-  { id: 3, title: 'Post 3', content: 'Content for post 3' }
-];
-
-app.get('/api/posts', (req, res) => {
-  res.json(posts);
-});
-
 // reference the env file without installing a 3rd party package.
 // set the const variable to process.env.PORT
 // Explicitly reference this in the package.json
@@ -45,3 +34,4 @@ app.get('/api/posts', (req, res) => {
 // lets create a routes folder
 // create a folder in the project
 
+// Lets move the routes to a separate folder
