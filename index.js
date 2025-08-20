@@ -6,12 +6,14 @@ import router from './routes/routes.js';
 // initialize express
 const app = express();
 
-// Routes
-app.use('/',router);
-
 // Add a body parser
 app.use(express.json()); // For parsing application/json
 app.use(express.urlencoded({ extended: false })); // For parsing application/x-www-form-urlencoded
+
+
+// Routes
+app.use('/',router);
+
 
 
 app.listen(PORT, () => {
