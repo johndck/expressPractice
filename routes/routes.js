@@ -1,5 +1,6 @@
 import express from 'express';
 const router = express.Router();
+import fetch from 'node-fetch';
 
 
 // respond to a get request
@@ -26,7 +27,7 @@ router.get('/api/posts', (req, res) => {
   res.json(posts);
 });
 
-// create a posts routes
+// lets create a test add new user request to Supabase
 
 router.post('/api/add-post', (req, res) => {
 
