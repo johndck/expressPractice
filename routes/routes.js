@@ -5,7 +5,7 @@ import fetch from 'node-fetch';
 
 // respond to a get request
 router.get('/', (req, res) => {
-  res.send('Hello World is this working !');
+  res.send('Hello World is this working in the file !');
 });
 //respond to another get
 router.get('/about', (req, res) => {
@@ -60,7 +60,7 @@ if(!SUPABASE_SERVICE_ROLE_KEY){
 
 catch (error){
     console.error(`Error creating user`, error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    res.status(500).json({ error: 'Internal Server Error you code is working' });
 }
 
 
