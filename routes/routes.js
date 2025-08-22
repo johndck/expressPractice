@@ -29,21 +29,43 @@ router.get('/api/posts', (req, res) => {
 
 // lets create a test add new user request to Supabase
 
-router.post('/api/add-post', (req, res) => {
+router.post ('/api/signup', async (req,res) =>{
 
-const newPost = {
-  id: posts.length + 1,
-  title: req.body.title,
-  content: req.body.content
-};
+try{
+// extract email and password sent through
+//destruction the req.body
+const { email, password } = req.body;
 
-if (!newPost.title || !newPost.content) {
-  return res.status(400).json({ error: 'Title and content are required' });
-};
+if (!email || !password) {
+  return res.status(400).json({ error: 'Email and password are required' });
+}
 
-posts.push(newPost);
-res.status(201).json(newPost);
+// build the user object
+ const newUser = {
+    email: email,
+    password: password
+  };
+
+// set the Supabase endpoint and creds
+
+const SUPABASE_URL=process.env.SUPABASE_URL;
+const SUPABASE_SERVICE_ROLE_KEY=process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+// Check that we have a service role key
+
+if(!SUPABASE_SERVICE_ROLE_KEY){
+  return res.status(500).json({ error: 'Internal Server Error' });
+}
+}
+
+catch (error){
+    console.error(`Error creating user`, error);
+    res.status(500).json({ error: 'Internal Server Error' });
+}
+
+
 });
+
 
 
 

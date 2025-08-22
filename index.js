@@ -37,3 +37,26 @@ app.listen(PORT, () => {
 // create a folder in the project
 
 // Lets move the routes to a separate folder
+/*
+Holder some code to remind me of the post code basics
+
+router.post('/api/add-post', (req, res) => {
+
+const newPost = {
+  id: posts.length + 1,
+  title: req.body.title,
+  content: req.body.content
+};
+
+if (!newPost.title || !newPost.content) {
+  return res.status(400).json({ error: 'Title and content are required' });
+};
+
+posts.push(newPost);
+res.status(201).json(newPost);
+});
+
+
+
+
+*/
