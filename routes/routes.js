@@ -69,7 +69,28 @@ headers:{
 },
 body: JSON.stringify(newUser),
 }
-);}
+);
+
+// Parse the response
+
+const data = await response.json();
+
+if (!response.ok){
+return res.status(response.status).json({ error: data.message || 'Failed to create user' });
+}
+
+// Return success response
+
+res.status(201).json({
+      message: 'User created successfully',
+      user: data.user,
+      session: data.session,
+    });
+
+
+}
+
+
 
 catch (error){
     console.error(`Error creating user`, error);
