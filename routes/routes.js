@@ -54,9 +54,22 @@ const SUPABASE_SERVICE_ROLE_KEY=process.env.SUPABASE_SERVICE_ROLE_KEY;
 // Check that we have a service role key
 
 if(!SUPABASE_SERVICE_ROLE_KEY){
-  return res.status(500).json({ error: 'Internal Server Error' });
+  return res.status(500).json({ error: 'Supabase Service Role key is missing' });
 }
+
+// Do the fetch to the Supabase URL
+
+const response = await fetch (
+`URL`, {
+method: 'POST',
+headers:{
+'Content-Type': 'application/json',
+'apikey': SUPABASE_SERVICE_ROLE_KEY,
+'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`
+},
+body: JSON.stringify(newUser),
 }
+);}
 
 catch (error){
     console.error(`Error creating user`, error);
