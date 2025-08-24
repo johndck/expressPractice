@@ -8,7 +8,7 @@ const app = express();
 
 // Add a body parser
 app.use(express.json()); // For parsing application/json
-app.use(express.urlencoded({ extended: false })); // For parsing application/x-www-form-urlencoded
+app.use(express.urlencoded({ extended: true })); // For parsing application/x-www-form-urlencoded
 
 
 // Routes

@@ -49,7 +49,7 @@ if (!email || !password) {
 // set the Supabase endpoint and creds
 
 const SUPABASE_URL=process.env.SUPABASE_URL;
-const SUPABASE_SERVICE_ROLE_KEY=process.env.SUPABASE_SERVICE_ROLE_KEY;
+const SUPABASE_SERVICE_ROLE_KEY=process.env.SERVICE_ROLE_KEY;
 
 // Check that we have a service role key
 
@@ -60,7 +60,7 @@ if(!SUPABASE_SERVICE_ROLE_KEY){
 // Do the fetch to the Supabase URL
 
 const response = await fetch (
-`URL`, {
+`${SUPABASE_URL}/auth/v1/signup`, {
 method: 'POST',
 headers:{
 'Content-Type': 'application/json',
@@ -71,11 +71,17 @@ body: JSON.stringify(newUser),
 }
 );
 
+// Log the full response to see the status and headers
+    console.log('Supabase Response Status:', response.status);
+    console.log('Supabase Response Headers:', response.headers.get('content-type'));
+
+
 // Parse the response
 
 const data = await response.json();
 
 if (!response.ok){
+    console.error('Supabase Error Data:', data);
 return res.status(response.status).json({ error: data.message || 'Failed to create user' });
 }
 
