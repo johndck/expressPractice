@@ -87,13 +87,18 @@ return res.status(response.status).json({ error: data.message || 'Failed to crea
 
 // Return success response
 
-res.status(201).json({
+res.status(response.status).json({
       message: 'User created successfully',
       user: data.user,
       session: data.session,
     });
 
 
+    console.log('New user created:', {
+      message: 'User created successfully',
+      user: data.user,
+      session: data.session,
+    });
 }
 
 
