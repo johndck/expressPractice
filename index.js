@@ -1,10 +1,20 @@
 import express from 'express';
 const PORT = process.env.PORT;
 import router from './routes/routes.js';
+import cors from 'cors';
 
 
 // initialize express
 const app = express();
+
+// enable CORS from the REACT app's origin
+
+app.use(cors({
+  origin: 'http://localhost:5173', methods: ['GET', 'POST', 'PUT', 'DELETE'], allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
+
+
 
 // Add a body parser
 app.use(express.json()); // For parsing application/json
