@@ -1,6 +1,12 @@
 import express from 'express';
 const router = express.Router();
 import fetch from 'node-fetch';
+import { createClient } from '@supabase/supabase-js';
+
+
+const SUPABASE_URL=process.env.SUPABASE_URL;
+const SUPABASE_SERVICE_ROLE_KEY=process.env.SERVICE_ROLE_KEY;
+const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
 
 // respond to a get request
@@ -46,7 +52,7 @@ if (!email || !password) {
     password: password
   };
 
-// set the Supabase endpoint and creds
+  // set the Supabase endpoint and creds
 
 const SUPABASE_URL=process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY=process.env.SERVICE_ROLE_KEY;
@@ -112,7 +118,51 @@ catch (error){
 });
 
 
+// Here is the route for login
+// Using the supabase client 
 
+router.post('/api/login', async()=>{
+
+try{
+
+const { email, password } = req.body;
+
+if (!email || !password) {
+      return res.status(400).json({ error: 'Email and password are required' });
+    }
+const {data,error} = await supabase.auth.signInWithPassword({
+  email,
+  password
+});
+
+if (error) {
+      return res.status(401).json({ error: error.message });
+    }
+
+    res.status(200).json({
+      access_token: data.session.access_token,
+      refresh_token: data.session.refresh_token,
+      user: data.user,
+    });
+
+    console.log(`User logged in:`, {
+      email: data.user.email,
+      access_token: data.session.access_token,
+      refresh_token: data.session.refresh_token
+    });
+
+}
+catch(err){
+
+  console.error('Login error:', err);
+  res.status(500).json({ error: 'Internal server error during login' });
+
+}
+
+}
+
+
+);
 
 
 export default router;
