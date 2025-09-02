@@ -121,7 +121,7 @@ catch (error){
 // Here is the route for login
 // Using the supabase client 
 
-router.post('/api/login', async()=>{
+router.post('/api/login', async(req,res)=>{
 
 try{
 
