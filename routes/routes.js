@@ -11,11 +11,11 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
 // respond to a get request
 router.get('/', (req, res) => {
-  res.send('Hello World is this working in the file !');
+  res.send('Your server is up and running!');
 });
 //respond to another get
 router.get('/about', (req, res) => {
-  res.send('About Page');
+  res.send('You have reached the about page');
 });
 
 // respond to another get request
