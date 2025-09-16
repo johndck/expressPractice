@@ -168,5 +168,30 @@ catch(err){
 // Run through this tonight - Tuesday & post updated code to check 
 
 
+// Here is the route to check if MFA is enabled for a user
+
+router.post('/api/mfa/check', async (req, res) => {
+
+// make sure there is a valid access token, otherwise return an error
+const accessToken = req.headers['authorization']?.split(' ')[1];
+if (!accessToken) {
+  return res.status(401).json({ error: 'Access token is required' });
+}
+
+try {
+
+
+
+ 
+}
+catch(err){
+
+  console.error('Something has gone wrong with the mfa check:', err);
+  res.status(500).json({ error: 'Internal server error during MFA check' });  
+
+}
+});
+
+
 
 export default router;
