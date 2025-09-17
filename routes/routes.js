@@ -180,8 +180,21 @@ if (!accessToken) {
 
 try {
 
+// Get the user object from Supabase using the access token
+    const { data: { user }, error: userError } = await supabase.auth.getUser(accessToken);
+    if (userError || !user) {
+      return res.status(401).json({ error: 'Invalid or expired token' });
+    }
 
+    console.log('Your User authenticated is:', user);
 
+// Check for enrolled MFA factors
+    const { data: factors, error: factorsError } = await supabase.auth.mfa.listFactors();
+    if (factorsError) {
+      return res.status(500).json({ error: `Failed to fetch MFA factors: ${factorsError.message}` });
+    }
+
+    console.log('MFA factors for user:', user.id, factors);
  
 }
 catch(err){
