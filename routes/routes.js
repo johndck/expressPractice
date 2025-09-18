@@ -195,6 +195,7 @@ try {
     }
 
     console.log('MFA factors for user:', user.id, factors);
+    res.status(200).json({ factors });
  
 }
 catch(err){
