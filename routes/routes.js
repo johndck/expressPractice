@@ -207,8 +207,17 @@ catch(err){
 });
 
 // Here is the route to enrol the user into MFA
+// add in later the check to see if the user already has MFA enabled
+// add in later the check on the valid access token - very important
 
 router.post('/api/mfa/enrol', async(req,res)=>{
+
+
+const accessToken = req.headers['authorization']?.split(' ')[1];
+if (!accessToken) {
+  return res.status(401).json({ error: 'Access token is required' });
+}
+
 
   try{
 
@@ -217,7 +226,9 @@ router.post('/api/mfa/enrol', async(req,res)=>{
       return res.status(500).json({ error: `Failed to enroll MFA: ${enrollError.message}` });
       }
   const qrCodeSvg = enrollData?.totp?.qr_code;
-  res.status(200).json({ qrCodeSvg });
+  const factorId = enrollData?.id;
+  
+  res.status(200).json({ qrCodeSvg, factorId });
   }
   catch(err){
   console.error('Something has gone wrong with setting up the MFA:', err);
