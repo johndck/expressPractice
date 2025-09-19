@@ -206,6 +206,28 @@ catch(err){
 }
 });
 
+// Here is the route to enrol the user into MFA
+
+router.post('/api/mfa/enrol', async(req,res)=>{
+
+  try{
+
+  const { data: enrollData, error: enrollError } = await supabase.auth.mfa.enroll();
+      if (enrollError) {
+      return res.status(500).json({ error: `Failed to enroll MFA: ${enrollError.message}` });
+      }
+  const qrCodeSvg = enrollData?.totp?.qr_code;
+  res.status(200).json({ qrCodeSvg });
+  }
+  catch(err){
+  console.error('Something has gone wrong with setting up the MFA:', err);
+  res.status(500).json({ error: 'We ran into a problem with setting up MFA' });  
+}
+
+});
+
+
+
 
 
 export default router;
