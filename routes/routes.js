@@ -208,7 +208,7 @@ catch(err){
 
 // Here is the route to enrol the user into MFA
 // add in later the check to see if the user already has MFA enabled
-// add in later the check on the valid access token - very important
+
 
 router.post('/api/mfa/enrol', async(req,res)=>{
 
@@ -218,10 +218,23 @@ if (!accessToken) {
   return res.status(401).json({ error: 'Access token is required' });
 }
 
+const { data: { user }, error: userError } = await supabase.auth.getUser(accessToken);
+if (userError || !user) {
+  return res.status(401).json({ error: 'Invalid or expired token' });
+}
+console.log('Your User authenticated is working:', user);
+
 
   try{
 
-  const { data: enrollData, error: enrollError } = await supabase.auth.mfa.enroll();
+  const { error: sessionError } = await supabase.auth.setSession({ access_token: accessToken });
+    if (sessionError) {
+      console.error('Failed to set session:', sessionError);
+      return res.status(500).json({ error: `Failed to set session: ${sessionError.message}` });
+    }
+
+
+  const { data: enrollData, error: enrollError } = await supabase.auth.mfa.enroll({factorType: 'totp'});
       if (enrollError) {
       return res.status(500).json({ error: `Failed to enroll MFA: ${enrollError.message}` });
       }
