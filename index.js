@@ -10,7 +10,7 @@ const app = express();
 // enable CORS from the REACT app's origin
 
 app.use(cors({
-  origin: 'http://localhost:5173', methods: ['GET', 'POST', 'PUT', 'DELETE'], allowedHeaders: ['Content-Type', 'Authorization']
+  origin: 'http://localhost:5173', methods: ['GET', 'POST', 'PUT', 'DELETE'], allowedHeaders: ['Content-Type', 'Authorization', 'refresh-token']
 }));
 
 

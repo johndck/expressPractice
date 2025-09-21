@@ -214,6 +214,7 @@ router.post('/api/mfa/enrol', async(req,res)=>{
 
 
 const accessToken = req.headers['authorization']?.split(' ')[1];
+const refreshToken = req.headers['refresh-token']; // Extract custom header
 if (!accessToken) {
   return res.status(401).json({ error: 'Access token is required' });
 }
@@ -227,7 +228,7 @@ console.log('Your User authenticated is working:', user);
 
   try{
 
-  const { error: sessionError } = await supabase.auth.setSession({ access_token: accessToken });
+  const { error: sessionError } = await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
     if (sessionError) {
       console.error('Failed to set session:', sessionError);
       return res.status(500).json({ error: `Failed to set session: ${sessionError.message}` });
