@@ -241,8 +241,9 @@ console.log('Your User authenticated is working:', user);
       }
   const qrCodeSvg = enrollData?.totp?.qr_code;
   const factorId = enrollData?.id;
+  const sharedSecret = enrollData?.totp?.secret;
   
-  res.status(200).json({ qrCodeSvg, factorId });
+  res.status(200).json({ qrCodeSvg, factorId, sharedSecret });
   }
   catch(err){
   console.error('Something has gone wrong with setting up the MFA:', err);
