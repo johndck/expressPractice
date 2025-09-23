@@ -252,6 +252,19 @@ console.log('Your User authenticated is working:', user);
 
 });
 
+// Here is the route to verify the MFA token entered by the user
+
+router.post('/api/mfa/verify', async(req,res)=>{
+
+
+try{}
+catch(err){
+
+  console.error('Something has gone wrong with the mfa verify:', err);
+  res.status(500).json({ error: 'Internal server error during MFA verify' });  
+
+
+}});
 
 
 
