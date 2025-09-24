@@ -252,12 +252,58 @@ console.log('Your User authenticated is working:', user);
 
 });
 
+// Here is the route to get the challenge ID which is required for the verify route
+// I will call this via a useEffect in my front end react app
+
+router.post('/api/mfa/challenge', async(req,res)=>{
+
+const accessToken = req.headers['authorization']?.split(' ')[1];
+if (!accessToken) {
+  return res.status(401).json({ error: 'Access token is required' });
+}
+
+const { factorId } = req.body;
+if (!factorId) {
+      return res.status(400).json({ error: 'factorId is required' });
+    }
+
+try{
+
+const { data, error } = await supabase.auth.mfa.challenge(
+      accessToken,{factorId}
+    );  
+  }
+
+catch(err){
+
+  console.error('Something has gone wrong with the mfa challenge:', err);
+  res.status(500).json({ error: 'Internal server error during MFA challenge' });
+
+}});
+
+
+
 // Here is the route to verify the MFA token entered by the user
 
 router.post('/api/mfa/verify', async(req,res)=>{
 
+const accessToken = req.headers['authorization']?.split(' ')[1];
+if (!accessToken) {
+  return res.status(401).json({ error: 'Access token is required' });
+}
 
-try{}
+const {factorId, code} = req.body;
+if (!factorId || !code) {
+      return res.status(400).json({ error: 'factorId and code are required' });
+    }
+
+try{
+
+const { data, error } = await supabase.auth.api.challengeAndVerify(
+      accessToken,{factorId,code}
+    );
+
+}
 catch(err){
 
   console.error('Something has gone wrong with the mfa verify:', err);
