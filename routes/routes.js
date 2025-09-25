@@ -269,11 +269,24 @@ if (!factorId) {
 
 try{
 
-const { data, error } = await supabase.auth.mfa.challenge(
-      accessToken,{factorId}
-    );  
-  }
+const { error: sessionError } = await supabase.auth.setSession({
+      access_token: accessToken});
+    if (sessionError) {
+      return res.status(401).json({ error: 'Invalid or expired access token' });
+    }
 
+    // Call Supabase MFA challenge API
+    const { data, error } = await supabase.auth.mfa.challenge({ factorId });
+    if (error) {
+      return res.status(400).json({ error: error.message });
+    }
+  
+// Return challengeId and expires_at
+    res.status(200).json({
+      challengeId: data.id,
+      expires_at: data.expires_at
+    });
+  }
 catch(err){
 
   console.error('Something has gone wrong with the mfa challenge:', err);
@@ -292,18 +305,37 @@ if (!accessToken) {
   return res.status(401).json({ error: 'Access token is required' });
 }
 
-const {factorId, code} = req.body;
-if (!factorId || !code) {
+const {factorId,challengeId, code} = req.body;
+if (!factorId || !code || !challengeId) {
       return res.status(400).json({ error: 'factorId and code are required' });
     }
 
 try{
+    // Set the session with the access token
+    const { error: sessionError } = await supabase.auth.setSession({
+      access_token: accessToken,
+      refresh_token: '' // Not needed for verify
+    });
+    if (sessionError) {
+      return res.status(401).json({ error: 'Invalid or expired access token' });
+    }
 
-const { data, error } = await supabase.auth.api.challengeAndVerify(
-      accessToken,{factorId,code}
-    );
+    // Call Supabase MFA verify API
+    const { data, error } = await supabase.auth.mfa.verify({
+      factorId,
+      challengeId,
+      code
+    });
+    if (error) {
+      return res.status(400).json({ error: error.message });
+    }
 
-}
+    // Return success response
+    res.status(200).json({
+      message: 'MFA verified successfully',
+      factor: data
+    });
+  }
 catch(err){
 
   console.error('Something has gone wrong with the mfa verify:', err);
