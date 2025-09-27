@@ -300,6 +300,7 @@ catch(err){
 
 router.post('/api/mfa/verify', async(req,res)=>{
 
+const refreshToken = req.headers['refresh-token'];
 const accessToken = req.headers['authorization']?.split(' ')[1];
 if (!accessToken) {
   return res.status(401).json({ error: 'Access token is required' });
@@ -312,10 +313,7 @@ if (!factorId || !code || !challengeId) {
 
 try{
     // Set the session with the access token
-    const { error: sessionError } = await supabase.auth.setSession({
-      access_token: accessToken,
-      refresh_token: '' // Not needed for verify
-    });
+    const { error: sessionError } = await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
     if (sessionError) {
       return res.status(401).json({ error: 'Invalid or expired access token' });
     }
