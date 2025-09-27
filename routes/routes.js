@@ -258,6 +258,7 @@ console.log('Your User authenticated is working:', user);
 router.post('/api/mfa/challenge', async(req,res)=>{
 
 const accessToken = req.headers['authorization']?.split(' ')[1];
+const refreshToken = req.headers['refresh-token'];
 if (!accessToken) {
   return res.status(401).json({ error: 'Access token is required' });
 }
@@ -269,8 +270,7 @@ if (!factorId) {
 
 try{
 
-const { error: sessionError } = await supabase.auth.setSession({
-      access_token: accessToken});
+const { error: sessionError } = await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
     if (sessionError) {
       return res.status(401).json({ error: 'Invalid or expired access token' });
     }
