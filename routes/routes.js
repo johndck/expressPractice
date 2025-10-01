@@ -212,7 +212,6 @@ catch(err){
 
 router.post('/api/mfa/enrol', async(req,res)=>{
 
-
 const accessToken = req.headers['authorization']?.split(' ')[1];
 const refreshToken = req.headers['refresh-token']; // Extract custom header
 if (!accessToken) {
@@ -226,7 +225,7 @@ if (userError || !user) {
 console.log('Your User authenticated is working:', user);
 
 
-  try{
+try{
 
   const { error: sessionError } = await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
     if (sessionError) {
@@ -235,7 +234,38 @@ console.log('Your User authenticated is working:', user);
     }
 
 // Check if an unverified TOTP factor already exists - if it does delete it and create a new one
-// implmement this later
+// implement this later
+
+const { data, error } = await supabase.auth.mfa.listFactors();
+console.log('List of MFA factors:', {data,error});
+if (error) {
+      console.error('Failed to list MFA factors:', error);
+      return res.status(500).json({ error: `Failed to list MFA factors: ${error.message}` });
+    }
+
+    if (!data) {
+      console.error('No data returned from listFactors:', data);
+      return res.status(500).json({ error: 'Invalid response from MFA factors' });
+    }
+
+// Check for an unverified TOTP factor in data.all
+    const unverifiedTotpFactor = data.all.find(factor => 
+      factor.factor_type === 'totp' && factor.status === 'unverified'
+    );
+    console.log('Unverified TOTP factor:', unverifiedTotpFactor);
+
+
+if (unverifiedTotpFactor) {
+  const { error: deleteError } = await supabase.auth.mfa.unenroll({ factorId: unverifiedTotpFactor.id });
+  if (deleteError) {
+    console.error('Failed to delete unverified TOTP factor:', deleteError);
+    return res.status(500).json({ error: `Failed to delete unverified TOTP factor: ${deleteError.message}` });
+  }
+  console.log('Deleted unverified TOTP factor:', unverifiedTotpFactor.id);
+
+}
+
+// Now enroll a new TOTP factor
 
 
   const { data: enrollData, error: enrollError } = await supabase.auth.mfa.enroll({factorType: 'totp'});
@@ -249,11 +279,16 @@ console.log('Your User authenticated is working:', user);
   res.status(200).json({ qrCodeSvg, factorId, sharedSecret });
   }
   catch(err){
-  console.error('Something has gone wrong with setting up the MFA:', err);
-  res.status(500).json({ error: 'We ran into a problem with setting up MFA' });  
+  console.error('Error setting up MFA:', err.message, err.stack);
+  res.status(500).json({ error: 'Failed to set up MFA', details: err.message }); 
 }
 
 });
+
+
+
+
+
 
 // Here is the route to get the challenge ID which is required for the verify route
 // I will call this via a useEffect in my front end react app
