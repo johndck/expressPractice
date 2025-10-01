@@ -234,6 +234,9 @@ console.log('Your User authenticated is working:', user);
       return res.status(500).json({ error: `Failed to set session: ${sessionError.message}` });
     }
 
+// Check if an unverified TOTP factor already exists - if it does delete it and create a new one
+// implmement this later
+
 
   const { data: enrollData, error: enrollError } = await supabase.auth.mfa.enroll({factorType: 'totp'});
       if (enrollError) {
