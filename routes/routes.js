@@ -380,7 +380,29 @@ catch(err){
 
 }});
 
+// New API route to get the user's profile information from the users_profile table]
 
+router.post('/api/user/profile', async (req, res) => {
+
+// make sure there is a valid access token, otherwise return an error
+const accessToken = req.headers['authorization']?.split(' ')[1];
+if (!accessToken) {
+  return res.status(401).json({ error: 'Access token is required' });
+}
+
+// Extract user id from the request body
+const { userId } = req.body;
+if (!userId) {
+      return res.status(400).json({ error: 'userId is required' });
+    }
+
+try {}
+catch(err){
+
+  console.error('Something has gone wrong with fetching the user profile:', err);
+  res.status(500).json({ error: 'Internal server error during fetching user profile' });  
+
+}});
 
 
 export default router;
