@@ -336,20 +336,19 @@ catch(err){
 
 // Here is the route to verify the MFA token entered by the user
 
-router.post('/api/mfa/verify', async(req,res)=>{
+router.post('/api/mfa/verify', async (req, res) => {
+  const refreshToken = req.headers['refresh-token'];
+  const accessToken = req.headers['authorization']?.split(' ')[1];
+  if (!accessToken) {
+    return res.status(401).json({ error: 'Access token is required' });
+  }
 
-const refreshToken = req.headers['refresh-token'];
-const accessToken = req.headers['authorization']?.split(' ')[1];
-if (!accessToken) {
-  return res.status(401).json({ error: 'Access token is required' });
-}
+  const { factorId, challengeId, code } = req.body;
+  if (!factorId || !code || !challengeId) {
+    return res.status(400).json({ error: 'factorId and code are required' });
+  }
 
-const {factorId,challengeId, code} = req.body;
-if (!factorId || !code || !challengeId) {
-      return res.status(400).json({ error: 'factorId and code are required' });
-    }
-
-try{
+  try {
     // Set the session with the access token
     const { error: sessionError } = await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
     if (sessionError) {
@@ -366,43 +365,54 @@ try{
       return res.status(400).json({ error: error.message });
     }
 
-    // Return success response
+    
+    // Destructure user_id from the factor data (if present)
+    const userId = data.user.id;
+    if (!userId) {
+      return res.status(500).json({ error: 'user_id not found in MFA factor data' });
+    }
+    
+    console.log('Your User ID from the verify factor data is:', userId);
+
+
+
+  
+    // Fetch the user's profile from users_profiles table
+const { data: profile, error: profileError } = await supabase
+  .from('users_profiles')
+  .select('*')
+  .eq('id', userId)
+  .single();
+
+if (profileError) {
+  console.error('Supabase error fetching profile:', profileError);
+  return res.status(500).json({ error: 'Failed to fetch user profile', details: profileError.message });
+}
+
+if (!profile) {
+  console.error('No profile found for userId:', userId);
+  return res.status(404).json({ error: 'User profile not found' });
+}
+
+// If you reach here, profile was found
+console.log('Fetched user profile:', profile);
+  
+    
+
+    // Return success response with factor and profile
     res.status(200).json({
-      message: 'MFA verified successfully',
-      factor: data
+      message: 'MFA verified successfully & profile found',
+      factor: data  
     });
+  } catch (err) {
+    console.error('Something has gone wrong with the mfa verify:', err);
+    res.status(500).json({ error: 'Internal server error during MFA verify' });
   }
-catch(err){
-
-  console.error('Something has gone wrong with the mfa verify:', err);
-  res.status(500).json({ error: 'Internal server error during MFA verify' });  
-
-
-}});
+});
 
 // New API route to get the user's profile information from the users_profile table]
 
-router.post('/api/user/profile', async (req, res) => {
 
-// make sure there is a valid access token, otherwise return an error
-const accessToken = req.headers['authorization']?.split(' ')[1];
-if (!accessToken) {
-  return res.status(401).json({ error: 'Access token is required' });
-}
-
-// Extract user id from the request body
-const { userId } = req.body;
-if (!userId) {
-      return res.status(400).json({ error: 'userId is required' });
-    }
-
-try {}
-catch(err){
-
-  console.error('Something has gone wrong with fetching the user profile:', err);
-  res.status(500).json({ error: 'Internal server error during fetching user profile' });  
-
-}});
 
 
 export default router;
