@@ -402,7 +402,8 @@ console.log('Fetched user profile:', profile);
     // Return success response with factor and profile
     res.status(200).json({
       message: 'MFA verified successfully & profile found',
-      factor: data  
+      factor: data,   
+      profile: profile
     });
   } catch (err) {
     console.error('Something has gone wrong with the mfa verify:', err);
