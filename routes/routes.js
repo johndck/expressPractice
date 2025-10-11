@@ -411,7 +411,36 @@ console.log('Fetched user profile:', profile);
   }
 });
 
-// New API route to get the user's profile information from the users_profile table]
+// Create my route to log out the user
+
+router.post('/api/logout', async (req, res) => {
+
+
+try {
+  const {refreshToken} = req.body;
+  if (!refreshToken) {
+    return res.status(400).json({ error: 'Refresh token is required' });
+  }
+
+const { error } = await supabase.auth.admin.signOut({ refreshToken });
+  if (error) {
+    console.warn('Supabase session revocation failed (token likely invalid/expired):', error.message);
+    return res.status(200).json({ message: 'Logout confirmed. Local cleanup required.'});
+  }
+
+  res.status(200).json({ message: 'User logged out successfully' });
+  console.log('User logged out successfully');
+
+}
+catch(err) {
+  console.error('Error during logout:', err);
+  res.status(500).json({ error: 'Internal server error during logout' });
+}
+
+
+
+
+});
 
 
 
