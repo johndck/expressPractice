@@ -54,8 +54,7 @@ if (!email || !password) {
 
   // set the Supabase endpoint and creds
 
-const SUPABASE_URL=process.env.SUPABASE_URL;
-const SUPABASE_SERVICE_ROLE_KEY=process.env.SERVICE_ROLE_KEY;
+
 
 // Check that we have a service role key
 
@@ -417,12 +416,13 @@ router.post('/api/logout', async (req, res) => {
 
 
 try {
-  const {refreshToken} = req.body;
+  const refreshToken = req.headers['refresh-token'];
+  const accessToken = req.headers['authorization']?.split(' ')[1];
   if (!refreshToken) {
     return res.status(400).json({ error: 'Refresh token is required' });
   }
 
-const { error } = await supabase.auth.admin.signOut({ refreshToken });
+const { error } = await supabase.auth.signOut({ accessToken,refreshToken });
   if (error) {
     console.warn('Supabase session revocation failed (token likely invalid/expired):', error.message);
     return res.status(200).json({ message: 'Logout confirmed. Local cleanup required.'});
