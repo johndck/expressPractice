@@ -443,6 +443,59 @@ catch(err) {
 });
 
 
+// Login with Google route
+
+const GOOGLE_CLIENT_ID=process.env.GOOGLE_CLIENT_ID;
+const GOOGLE_REDIRECT_URI=process.env.GOOGLE_REDIRECT;
+
+
+router.get('/api/login/google', async (req, res) => {
+   try {
+    const rootUrl = 'https://accounts.google.com/o/oauth2/v2/auth';
+
+    const options = {
+      redirect_uri: GOOGLE_REDIRECT_URI,
+      client_id: GOOGLE_CLIENT_ID,
+      access_type: 'offline', // Request a refresh token
+      response_type: 'code', // Crucial: We want an authorization code
+      prompt: 'consent', // Force consent screen
+      scope: [
+        'https://www.googleapis.com/auth/userinfo.profile',
+        'https://www.googleapis.com/auth/userinfo.email',
+      ].join(' '),
+    };
+
+    const qs = new URLSearchParams(options).toString();
+
+    // Redirect the user to Google's consent screen
+    return res.json({ url: `${rootUrl}?${qs}` });
+
+  } catch (error) {
+    // ⚠️ This catch block primarily handles unexpected server issues 
+    // (e.g., if res.redirect failed for some internal reason).
+    console.error('Error initiating Google OAuth flow:', error);
+    
+    // Redirect the user back to the application's login/error page
+    // (assuming your React app runs on a different port, e.g., 5173 or 3001)
+    res.redirect('http://localhost:5173/login?error=auth_init_failed');
+  }
+});
+
+
+// my callback route for OAuth
+router.get('/api/auth/callback', async (req, res) => {
+
+const code = req.query.code;
+const state = req.query.state;
+
+console.log('OAuth callback received with code:', code, 'and state:', state);
+
+
+  // This route will be handled by the front-end application
+  res.send('OAuth callback received. Please handle this in your front-end app.');
+});
+
+
 
 
 export default router;
