@@ -447,6 +447,7 @@ catch(err) {
 
 const GOOGLE_CLIENT_ID=process.env.GOOGLE_CLIENT_ID;
 const GOOGLE_REDIRECT_URI=process.env.GOOGLE_REDIRECT;
+const GOOGLE_CLIENT_SECRET=process.env.GOOGLE_CLIENT_SECRET;
 
 
 router.get('/api/login/google', async (req, res) => {
@@ -485,14 +486,47 @@ router.get('/api/login/google', async (req, res) => {
 // my callback route for OAuth
 router.get('/api/auth/callback', async (req, res) => {
 
-const code = req.query.code;
-const state = req.query.state;
+const rawCode = req.query.code;
+  const code = Array.isArray(rawCode) ? rawCode[0] : rawCode;
+//const state = req.query.state;
 
-console.log('OAuth callback received with code:', code, 'and state:', state);
+ if (!code) {
+        console.error('Callback Error: Authorization code not found in request.');
+        // Handle the case where the user denied access or an error occurred
+        return res.status(400).send('Authorization code missing. User may have denied access.');
+    }
+
+try{
+  const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({
+                code,
+                client_id: GOOGLE_CLIENT_ID,
+                client_secret: GOOGLE_CLIENT_SECRET,
+                redirect_uri: GOOGLE_REDIRECT_URI,
+                grant_type: 'authorization_code',
+            }),
+        });
+
+    const tokenData = await tokenResponse.json();
+
+        if (!tokenResponse.ok) {
+            console.error('Token Exchange Failed:', tokenResponse.status, tokenData);
+            return res.status(tokenResponse.status).json({ error: tokenData });
+        }
+
+        console.log('Token Exchange Successful! access_token present:', !!tokenData.access_token);
+    return res.status(200).json({ message: 'Token exchange successful', tokenData });
+
+}
+catch(error){
+  console.error('Error in OAuth callback processing:', error);
+  return res.status(500).send('Internal Server Error during OAuth callback processing.');
+}
 
 
-  // This route will be handled by the front-end application
-  res.send('OAuth callback received. Please handle this in your front-end app.');
+ 
 });
 
 
