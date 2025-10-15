@@ -517,8 +517,31 @@ try{
         }
 
         console.log('Token Exchange Successful! access_token present:', !!tokenData.access_token);
-    return res.status(200).json({ message: 'Token exchange successful', tokenData });
 
+
+         const idToken = tokenData.id_token;
+        if (!idToken) {
+          console.error('No id_token in tokenData:', tokenData);
+          return res.status(500).json({ error: 'id_token missing from token response' });
+        }
+
+//now login to Supabase using the access token from Google
+// Use the access token to sign in with Supabase
+const { data, error } = await supabase.auth.signInWithIdToken({
+  provider: 'google',
+  id_token: idToken,
+});
+
+if (error) {
+  console.error('Supabase signInWithIdToken error:', error);
+  return res.status(400).json({ error: error.message });
+}
+/*
+console.log('Supabase signInWithIdToken success:', data);
+
+// Return success response with Supabase session info
+return res.status(200).json({ message: 'Supabase login successful', session: data.session, user: data.user });
+*/
 }
 catch(error){
   console.error('Error in OAuth callback processing:', error);
