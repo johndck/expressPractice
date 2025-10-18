@@ -527,7 +527,7 @@ try{
 
 const { data, error } = await supabase.auth.signInWithIdToken({
   provider: 'google',
-  id_token: idToken,
+  token: idToken,
 });
 
 if (error) {
