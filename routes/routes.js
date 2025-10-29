@@ -550,7 +550,7 @@ if (profileError) {
   return res.status(400).json({ error: error.message, details: error });
 }
 
-console.log('User profile:', profileData);
+console.log('User profile:', profile);
 
 // success — return session/user (for testing only)
 return res.status(200).json({ message: 'Supabase login successful', session: data.session, user: data.user });
