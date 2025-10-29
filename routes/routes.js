@@ -525,20 +525,37 @@ try{
   return res.status(500).json({ error: 'id_token missing from token response' });
 }
 
-const { data, error } = await supabase.auth.signInWithIdToken({
+const { data, error: authError } = await supabase.auth.signInWithIdToken({
   provider: 'google',
   token: idToken,
 });
 
-if (error) {
+if (authError) {
   console.error('Supabase signInWithIdToken error:', error);
   return res.status(400).json({ error: error.message, details: error });
 }
 
+// test fetching the user profile from supabase
+const userId = data.user.id;
+
+const { data: profile, error: profileError } = await supabase
+  .from('users_profiles')
+  .select('*')
+  .eq('id', userId)
+  .single();
+
+
+if (profileError) {
+  console.error('Error fetching user profile:', error);
+  return res.status(400).json({ error: error.message, details: error });
+}
+
+console.log('User profile:', profileData);
+
 // success — return session/user (for testing only)
 return res.status(200).json({ message: 'Supabase login successful', session: data.session, user: data.user });
-// ...existing code...
-        
+
+      
     
 }
 catch(error){
