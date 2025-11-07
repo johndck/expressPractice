@@ -2,6 +2,7 @@ import express from 'express';
 const PORT = process.env.PORT;
 import router from './routes/routes.js';
 import cors from 'cors';
+import cookieParser from 'cookie-parser';
 
 
 // initialize express
@@ -10,7 +11,7 @@ const app = express();
 // enable CORS from the REACT app's origin
 
 app.use(cors({
-  origin: 'http://localhost:5173', methods: ['GET', 'POST', 'PUT', 'DELETE'], allowedHeaders: ['Content-Type', 'Authorization', 'refresh-token']
+  origin: 'http://localhost:5173', methods: ['GET', 'POST', 'PUT', 'DELETE'], allowedHeaders: ['Content-Type', 'Authorization', 'refresh-token'], credentials: true
 }));
 
 
@@ -19,6 +20,7 @@ app.use(cors({
 // Add a body parser
 app.use(express.json()); // For parsing application/json
 app.use(express.urlencoded({ extended: true })); // For parsing application/x-www-form-urlencoded
+app.use(cookieParser());
 
 
 // Routes

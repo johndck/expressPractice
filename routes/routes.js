@@ -138,10 +138,32 @@ if (error) {
       return res.status(401).json({ error: error.message });
     }
 
+// set up httpOnly cookies for access and refresh tokens
+
+const { access_token, refresh_token, expires_in } = data.session;
+
+res.cookie('my-access-token', access_token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production', // Send only over HTTPS in production
+    sameSite: 'strict', // Protects against CSRF
+    maxAge: expires_in * 1000, // `expires_in` is in seconds, `maxAge` is in milliseconds
+    path: '/', // Make cookie available to all paths
+    // domain: 'your-domain.com' // Use this if your API and frontend are on different subdomains
+  });
+
+  // The refresh_token is long-lived.
+  res.cookie('my-refresh-token', refresh_token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    path: '/', 
+    // maxAge: ... // You can set a longer maxAge here, e.g., 7 days in ms
+    // domain: 'your-domain.com' 
+  });
+
+
     res.status(200).json({
-      access_token: data.session.access_token,
-      refresh_token: data.session.refresh_token,
-      user: data.user,
+      user: data.user
     });
 
     console.log(`User logged in:`, {
@@ -172,9 +194,9 @@ catch(err){
 router.post('/api/mfa/check', async (req, res) => {
 
 // make sure there is a valid access token, otherwise return an error
-const accessToken = req.headers['authorization']?.split(' ')[1];
+const accessToken = req.cookies['my-access-token'];
 if (!accessToken) {
-  return res.status(401).json({ error: 'Access token is required' });
+  return res.status(401).json({ error: 'Access token is required JD' });
 }
 
 try {
@@ -395,6 +417,9 @@ if (!profile) {
 
 // If you reach here, profile was found
 console.log('Fetched user profile:', profile);
+
+
+
   
     
 
