@@ -125,11 +125,10 @@ router.post('/api/login', async(req,res)=>{
 try{
 
 const { email, password } = req.body;
-
 if (!email || !password) {
       return res.status(400).json({ error: 'Email and password are required' });
     }
-const {data,error} = await supabase.auth.signInWithPassword({
+const {data: supabaseData,error} = await supabase.auth.signInWithPassword({
   email,
   password
 });
@@ -138,39 +137,113 @@ if (error) {
       return res.status(401).json({ error: error.message });
     }
 
-// set up httpOnly cookies for access and refresh tokens
+console.log('Login successful, received data:', supabaseData);
 
-const { access_token, refresh_token, expires_in } = data.session;
+// set the session with the access token
 
-res.cookie('my-access-token', access_token, {
+const user = supabaseData.user;
+const sessionData = supabaseData.session;
+
+// Check the MFA factors
+
+// Constants for maintainability
+const FACTOR_STATUS = {
+  VERIFIED: 'verified',
+  UNVERIFIED: 'unverified',
+};
+const FACTOR_TYPE = {
+  TOTP: 'totp',
+};
+const MFA_STATUS = {
+   VERIFIED: 'verified',     // Verified TOTP: Allow login with cookies
+  UNVERIFIED: 'unverified', // Unverified: Do not allow login
+  NO_MFA: 'no_mfa',         // No factors: Placeholder (no flow for now)
+};
+
+// Initialize variables for later use
+let mfaStatus = MFA_STATUS.NO_MFA;
+let factorId = null;
+
+const { data, factorsError } = await supabase.auth.mfa.listFactors();
+
+if (factorsError) {
+  console.error('MFA check failed:', factorsError);
+  mfaStatus = 'error';
+  
+} else
+  {
+
+    console.log('MFA factors retrieved:', data);
+
+  // Process factors into login states
+  const loginStateFactors = (data?.all || []).map(factor => ({
+    factorId: factor.id,
+    state:
+      factor.status === FACTOR_STATUS.VERIFIED && factor.factor_type === FACTOR_TYPE.TOTP
+        ? MFA_STATUS.VERIFIED
+        : factor.status === FACTOR_STATUS.UNVERIFIED
+          ? MFA_STATUS.UNVERIFIED
+          : null,
+  })).filter(factor => factor.state);
+
+
+  /// Determine MFA status
+  const verifiedTotp = loginStateFactors.find(f => f.state === MFA_STATUS.VERIFIED);
+  const unverifiedTotp = loginStateFactors.find(f => f.state === MFA_STATUS.UNVERIFIED);
+
+  if (verifiedTotp) {
+    mfaStatus = MFA_STATUS.VERIFIED;
+    factorId = verifiedTotp.factorId;
+  } else if (unverifiedTotp) {
+    mfaStatus = MFA_STATUS.UNVERIFIED;
+    factorId = unverifiedTotp.factorId;
+  }
+}
+
+// Handle MFA status
+if (mfaStatus === MFA_STATUS.VERIFIED) {
+  // Verified: Complete login with cookies
+  const { access_token, refresh_token, expires_in } = sessionData;
+
+  res.cookie('my-access-token', access_token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production', // Send only over HTTPS in production
-    sameSite: 'strict', // Protects against CSRF
-    maxAge: expires_in * 1000, // `expires_in` is in seconds, `maxAge` is in milliseconds
-    path: '/', // Make cookie available to all paths
-    // domain: 'your-domain.com' // Use this if your API and frontend are on different subdomains
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    maxAge: expires_in * 1000,
+    path: '/',
   });
 
-  // The refresh_token is long-lived.
   res.cookie('my-refresh-token', refresh_token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'strict',
-    path: '/', 
-    // maxAge: ... // You can set a longer maxAge here, e.g., 7 days in ms
-    // domain: 'your-domain.com' 
+    path: '/',
   });
 
+  res.status(200).json({
+    mfaStatus,
+    factorId,
+    userId: user.id,
+  });
 
-    res.status(200).json({
-      user: data.user
-    });
-
-    console.log(`User logged in:`, {
-      email: data.user.email,
-      access_token: data.session.access_token,
-      refresh_token: data.session.refresh_token
-    });
+ 
+} else if (mfaStatus === MFA_STATUS.UNVERIFIED) {
+  // Unverified: Do not complete login
+  res.status(200).json({
+    mfaStatus,
+    factorId,
+    userId: user.id,
+  });
+} else if (mfaStatus === 'error') {
+  return res.status(500).json({ error: 'Failed to check MFA status' });
+} else {
+  // NO_MFA: Placeholder (no flow for now)
+  res.status(200).json({
+    mfaStatus,
+    factorId: null,
+    userId: user.id,
+  });
+}
 
 }
 catch(err){
@@ -182,53 +255,11 @@ catch(err){
 
 }
 
-
 );
 
-// Add in a line of code to validate the authenticity if the JWT
-// Run through this tonight - Tuesday & post updated code to check 
 
 
-// Here is the route to check if MFA is enabled for a user
 
-router.post('/api/mfa/check', async (req, res) => {
-
-// make sure there is a valid access token, otherwise return an error
-const accessToken = req.cookies['my-access-token'];
-if (!accessToken) {
-  return res.status(401).json({ error: 'Access token is required JD' });
-}
-
-try {
-
-// Get the user object from Supabase using the access token
-    const { data: { user }, error: userError } = await supabase.auth.getUser(accessToken);
-    if (userError || !user) {
-      return res.status(401).json({ error: 'Invalid or expired token' });
-    }
-
-    console.log('Your User authenticated is:', user);
-
-// Check for enrolled MFA factors
-    const { data: factors, error: factorsError } = await supabase.auth.mfa.listFactors();
-    if (factorsError) {
-      return res.status(500).json({ error: `Failed to fetch MFA factors: ${factorsError.message}` });
-    }
-
-    console.log('MFA factors for user:', user.id, factors);
-    res.status(200).json({ factors });
- 
-}
-catch(err){
-
-  console.error('Something has gone wrong with the mfa check:', err);
-  res.status(500).json({ error: 'Internal server error during MFA check' });  
-
-}
-});
-
-// Here is the route to enrol the user into MFA
-// add in later the check to see if the user already has MFA enabled
 
 
 router.post('/api/mfa/enrol', async(req,res)=>{
@@ -305,9 +336,6 @@ if (unverifiedTotpFactor) {
 }
 
 });
-
-
-
 
 
 
