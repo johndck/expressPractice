@@ -340,7 +340,7 @@ if (unverifiedTotpFactor) {
 
 
 // Here is the route to get the challenge ID which is required for the verify route
-// I will call this via a useEffect in my front end react app
+// This could probably be removed.
 
 router.post('/api/mfa/challenge', async(req,res)=>{
 
@@ -386,37 +386,50 @@ catch(err){
 // Here is the route to verify the MFA token entered by the user
 
 router.post('/api/mfa/verify', async (req, res) => {
-  const refreshToken = req.headers['refresh-token'];
-  const accessToken = req.headers['authorization']?.split(' ')[1];
+ 
+
+  const accessToken = req.cookies['my-access-token'];
   if (!accessToken) {
-    return res.status(401).json({ error: 'Access token is required' });
+    return res.status(401).json({ error: 'Access token is required (missing from cookie)' });
   }
 
-  const { factorId, challengeId, code } = req.body;
-  if (!factorId || !code || !challengeId) {
+// Extract refresh token from httpOnly cookie (if needed for session)
+  const refreshToken = req.cookies['my-refresh-token'];
+
+
+  const { factorId, code } = req.body;
+  if (!factorId || !code) {
     return res.status(400).json({ error: 'factorId and code are required' });
   }
 
+
   try {
-    // Set the session with the access token
-    const { error: sessionError } = await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
-    if (sessionError) {
-      return res.status(401).json({ error: 'Invalid or expired access token' });
+    // Get the challenge ID
+
+    const { data: challengeData, error: challengeError } = await supabase.auth.mfa.challenge({ factorId });
+    if (challengeError) {
+      return res.status(400).json({ error: challengeError.message });
     }
 
+    const challengeId = challengeData.id; 
+
+    console.log('MFA Challenge ID obtained:', challengeId);
+
+
     // Call Supabase MFA verify API
-    const { data, error } = await supabase.auth.mfa.verify({
+    const { data: verifyData, error: verifyError } = await supabase.auth.mfa.verify({
       factorId,
       challengeId,
       code
     });
-    if (error) {
-      return res.status(400).json({ error: error.message });
+    if (verifyError) {
+      return res.status(400).json({ error: verifyError.message });
     }
 
     
+    
     // Destructure user_id from the factor data (if present)
-    const userId = data.user.id;
+   const userId = verifyData?.user?.id;
     if (!userId) {
       return res.status(500).json({ error: 'user_id not found in MFA factor data' });
     }
@@ -445,16 +458,12 @@ if (!profile) {
 
 // If you reach here, profile was found
 console.log('Fetched user profile:', profile);
-
-
-
-  
     
 
     // Return success response with factor and profile
     res.status(200).json({
       message: 'MFA verified successfully & profile found',
-      factor: data,   
+      factor: verifyData,
       profile: profile
     });
   } catch (err) {
