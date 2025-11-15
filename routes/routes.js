@@ -151,59 +151,66 @@ const FACTOR_STATUS = {
   VERIFIED: 'verified',
   UNVERIFIED: 'unverified',
 };
+// According to Supabase docs, the correct values for factor_type are 'totp' and 'sms'
 const FACTOR_TYPE = {
-  TOTP: 'totp',
+  TOTP: 'totp', PHONE: 'phone',
 };
-const MFA_STATUS = {
-   VERIFIED: 'verified',     // Verified TOTP: Allow login with cookies
-  UNVERIFIED: 'unverified', // Unverified: Do not allow login
-  NO_MFA: 'no_mfa',         // No factors: Placeholder (no flow for now)
+const MFA_STATE = {
+  HAS_VERIFIED_TOTP: 'has_verified_totp', // At least one verified TOTP factor
+  ONLY_UNVERIFIED: 'only_unverified', // Only unverified factors (TOTP or phone)
+  NO_FACTORS: 'no_factors', // No MFA factors enrolled
 };
 
 // Initialize variables for later use
-let mfaStatus = MFA_STATUS.NO_MFA;
+let mfaStatus = MFA_STATE.NO_FACTORS;
 let factorId = null;
+
+
 
 const { data, factorsError } = await supabase.auth.mfa.listFactors();
 
 if (factorsError) {
   console.error('MFA check failed:', factorsError);
-  mfaStatus = 'error';
-  
-} else
-  {
-
-    console.log('MFA factors retrieved:', data);
-
-  // Process factors into login states
-  const loginStateFactors = (data?.all || []).map(factor => ({
-    factorId: factor.id,
-    state:
-      factor.status === FACTOR_STATUS.VERIFIED && factor.factor_type === FACTOR_TYPE.TOTP
-        ? MFA_STATUS.VERIFIED
-        : factor.status === FACTOR_STATUS.UNVERIFIED
-          ? MFA_STATUS.UNVERIFIED
-          : null,
-  })).filter(factor => factor.state);
-
-
-  /// Determine MFA status
-  const verifiedTotp = loginStateFactors.find(f => f.state === MFA_STATUS.VERIFIED);
-  const unverifiedTotp = loginStateFactors.find(f => f.state === MFA_STATUS.UNVERIFIED);
-
-  if (verifiedTotp) {
-    mfaStatus = MFA_STATUS.VERIFIED;
-    factorId = verifiedTotp.factorId;
-  } else if (unverifiedTotp) {
-    mfaStatus = MFA_STATUS.UNVERIFIED;
-    factorId = unverifiedTotp.factorId;
-  }
+  return res.status(500).json({ error: 'Failed to check MFA status' });
 }
 
+console.log('MFA factors retrieved:', data);
+
+// Refactored logic to handle three states: VERIFIED, UNVERIFIED, and NO_FACTORS for TOTP factors
+  const allFactors = data?.all || [];
+  const totpFactors = allFactors.filter(
+    factor => factor.factor_type === FACTOR_TYPE.TOTP
+  );
+
+  // We declare verifiedTotp and unverifiedTotp with 'let' at the top of the block,
+  // instead of with 'const' inside the else branch, so we can assign their values conditionally
+  // and reference them afterward in the if...else if statements.
+  // Using 'const' would limit their scope to the else block, making them inaccessible later,
+  // so we need 'let' here.
+  let verifiedTotp, unverifiedTotp;
+  if (totpFactors.length === 0) {
+    mfaStatus = MFA_STATE.NO_FACTORS;
+    factorId = null;
+  } else {
+    verifiedTotp = totpFactors.find(factor => factor.status === FACTOR_STATUS.VERIFIED);
+    unverifiedTotp = totpFactors.find(factor => factor.status === FACTOR_STATUS.UNVERIFIED);
+  }
+  
+  if (verifiedTotp) {
+      mfaStatus = MFA_STATE.HAS_VERIFIED_TOTP;
+      factorId = verifiedTotp.id;
+    } else if (unverifiedTotp) {
+      mfaStatus = MFA_STATE.ONLY_UNVERIFIED;
+      factorId = unverifiedTotp.id;
+    }
+      
+console.log('MFA status:', mfaStatus);
+const { access_token, refresh_token, expires_in } = sessionData;
+
 // Handle MFA status
-if (mfaStatus === MFA_STATUS.VERIFIED) {
+if (mfaStatus === MFA_STATE.HAS_VERIFIED_TOTP) {
   // Verified: Complete login with cookies
-  const { access_token, refresh_token, expires_in } = sessionData;
+
 
   res.cookie('my-access-token', access_token, {
     httpOnly: true,
@@ -227,54 +234,77 @@ if (mfaStatus === MFA_STATUS.VERIFIED) {
   });
 
  
-} else if (mfaStatus === MFA_STATUS.UNVERIFIED) {
+} else if (mfaStatus === MFA_STATE.ONLY_UNVERIFIED) {
+
+  res.cookie('my-access-token', access_token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    maxAge: expires_in * 1000,
+    path: '/',
+  });
+
+  res.cookie('my-refresh-token', refresh_token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    path: '/',
+  });
+
   // Unverified: Do not complete login
   res.status(200).json({
     mfaStatus,
     factorId,
     userId: user.id,
   });
-} else if (mfaStatus === 'error') {
-  return res.status(500).json({ error: 'Failed to check MFA status' });
-} else {
-  // NO_MFA: Placeholder (no flow for now)
+} else if (mfaStatus === MFA_STATE.NO_FACTORS) {
+
+  res.cookie('my-access-token', access_token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    maxAge: expires_in * 1000,
+    path: '/',
+  });
+
+  res.cookie('my-refresh-token', refresh_token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    path: '/',
+  });
+
   res.status(200).json({
     mfaStatus,
     factorId: null,
     userId: user.id,
   });
 }
-
+ else {
+  console.error('Unexpected MFA status:', mfaStatus);
+  return res.status(500).json({ error: 'Unexpected MFA status' });
 }
-catch(err){
 
+} 
+
+
+catch(err){
   console.error('Login error:', err);
   res.status(500).json({ error: 'Internal server error during login' });
 
-}
-
-}
-
-);
-
-
-
-
-
+}});
 
 router.post('/api/mfa/enrol', async(req,res)=>{
 
-const accessToken = req.headers['authorization']?.split(' ')[1];
-const refreshToken = req.headers['refresh-token']; // Extract custom header
+
+const accessToken = req.cookies['my-access-token'];
+const refreshToken = req.cookies['my-refresh-token'];
 if (!accessToken) {
   return res.status(401).json({ error: 'Access token is required' });
 }
-
-const { data: { user }, error: userError } = await supabase.auth.getUser(accessToken);
-if (userError || !user) {
-  return res.status(401).json({ error: 'Invalid or expired token' });
+if (!refreshToken) {
+  return res.status(401).json({ error: 'Refresh token is required' });
 }
-console.log('Your User authenticated is working:', user);
 
 
 try{
@@ -344,10 +374,13 @@ if (unverifiedTotpFactor) {
 
 router.post('/api/mfa/challenge', async(req,res)=>{
 
-const accessToken = req.headers['authorization']?.split(' ')[1];
-const refreshToken = req.headers['refresh-token'];
+const accessToken = req.cookies['my-access-token'];
+const refreshToken = req.cookies['my-refresh-token'];
 if (!accessToken) {
   return res.status(401).json({ error: 'Access token is required' });
+}
+if (!refreshToken) {
+  return res.status(401).json({ error: 'Refresh token is required' });
 }
 
 const { factorId } = req.body;
@@ -503,6 +536,8 @@ catch(err) {
 
 
 });
+
+
 
 
 // Login with Google route
