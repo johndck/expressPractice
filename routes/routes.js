@@ -117,7 +117,7 @@ catch (error){
 });
 
 
-// Here is the route for login
+// Here is the route for login - this will need to be refactored closely with the signup route
 // Using the supabase client 
 
 router.post('/api/login', async(req,res)=>{
