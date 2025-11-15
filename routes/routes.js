@@ -146,7 +146,7 @@ const sessionData = supabaseData.session;
 
 // Check the MFA factors
 
-// Constants for maintainability
+
 const FACTOR_STATUS = {
   VERIFIED: 'verified',
   UNVERIFIED: 'unverified',
