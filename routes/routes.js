@@ -414,8 +414,6 @@ catch(err){
 
 }});
 
-
-
 // Here is the route to verify the MFA token entered by the user
 
 router.post('/api/mfa/verify', async (req, res) => {
@@ -468,8 +466,6 @@ router.post('/api/mfa/verify', async (req, res) => {
     }
     
     console.log('Your User ID from the verify factor data is:', userId);
-
-
 
   
     // Fetch the user's profile from users_profiles table
