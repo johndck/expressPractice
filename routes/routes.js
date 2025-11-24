@@ -134,7 +134,85 @@ const {data: supabaseData,error} = await supabase.auth.signInWithPassword({
 });
 
 if (error) {
-      return res.status(401).json({ error: error.message });
+      // Handle different error codes with switch statement
+      const errorStatus = error.status || 401; // Default to 401 if status not provided
+      
+      switch (errorStatus) {
+        case 400:
+          // Bad Request: Invalid credentials, missing fields, or validation errors
+          if (error.message?.toLowerCase().includes('invalid') || 
+              error.message?.toLowerCase().includes('credential')) {
+            return res.status(400).json({ 
+              error: 'Invalid credentials',
+              message: 'The email or password you entered is incorrect'
+            });
+          }
+          if (error.message?.toLowerCase().includes('email') && 
+              (error.message?.toLowerCase().includes('format') || 
+               error.message?.toLowerCase().includes('invalid') ||
+               error.message?.toLowerCase().includes('malformed'))) {
+            return res.status(400).json({ 
+              error: 'Validation error',
+              message: 'The email address format is invalid'
+            });
+          }
+          if (error.message?.toLowerCase().includes('required') || 
+              error.message?.toLowerCase().includes('missing')) {
+            return res.status(400).json({ 
+              error: 'Missing fields',
+              message: 'Email and password are required'
+            });
+          }
+          // Generic 400 error
+          return res.status(400).json({ 
+            error: 'Bad Request',
+            message: error.message || 'Invalid request'
+          });
+
+        case 401:
+          // Unauthorized: Usually rare for sign-in, but can happen with misconfigured client
+          return res.status(401).json({ 
+            error: 'Unauthorized',
+            message: error.message || 'Authentication failed. Please check your credentials or API configuration.'
+          });
+
+        case 422:
+          // Unprocessable Entity: Password too short or email rejected by specific rule
+          if (error.message?.toLowerCase().includes('password') && 
+              (error.message?.toLowerCase().includes('short') || 
+               error.message?.toLowerCase().includes('length') ||
+               error.message?.toLowerCase().includes('minimum'))) {
+            return res.status(422).json({ 
+              error: 'Password validation failed',
+              message: 'Password does not meet the minimum requirements'
+            });
+          }
+          if (error.message?.toLowerCase().includes('email')) {
+            return res.status(422).json({ 
+              error: 'Email validation failed',
+              message: 'Email address does not meet the required criteria'
+            });
+          }
+          // Generic 422 error
+          return res.status(422).json({ 
+            error: 'Unprocessable Entity',
+            message: error.message || 'The request could not be processed'
+          });
+
+        case 429:
+          // Too Many Requests: Rate limit exceeded
+          return res.status(429).json({ 
+            error: 'Too Many Requests',
+            message: 'Rate limit exceeded. Please wait before attempting to sign in again.'
+          });
+
+        default:
+          // Fallback for other error codes
+          return res.status(errorStatus).json({ 
+            error: 'Authentication error',
+            message: error.message || 'An error occurred during sign in'
+          });
+      }
     }
 
 console.log('Login successful, received data:', supabaseData);
